@@ -405,10 +405,11 @@ local GradientKit = require(ReplicatedStorage.Packages.GradientKit)
 
 GradientKit does not depend on this exact folder structure; it is only a suggested organization.
 
-## Showcase
 
-A separate showcase place can present every included effect in a compact gallery and demonstrate both automatically generated gradients and Studio-authored `UIGradient` objects.
+## License
 
-Showcase game: [ADD SHOWCASE URL]
+This project is released under the MIT License.
+
+See `LICENSE` for details.
 
 made with ❤️ by biotoxin495

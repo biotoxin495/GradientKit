@@ -203,7 +203,7 @@ local function makeColorSequence(colors: { Color3 }): ColorSequence
 		return ColorSequence.new(colors[1])
 	end
 
-	local keypoints = table.create(#colors)
+	local keypoints: { ColorSequenceKeypoint } = table.create(#colors)
 
 	for i, color in ipairs(colors) do
 		local alpha = (i - 1) / (#colors - 1)
@@ -213,7 +213,7 @@ local function makeColorSequence(colors: { Color3 }): ColorSequence
 	return ColorSequence.new(keypoints)
 end
 
-local function normalizeEffectName(effectName: any): string?
+local function normalizeEffectName(effectName: string): string?
 	local compact = string.lower(tostring(effectName)):gsub("[%s_%-]", "")
 
 	local aliases: { [string]: string } = {
@@ -256,11 +256,13 @@ local function assertGradient(gradient: Instance)
 	assert(gradient:IsA("UIGradient"), "GradientKit expected a UIGradient object.")
 end
 
-local function assertGuiObject(guiObject: Instance?, effectName: string)
+local function assertGuiObject(guiObject: Instance?, effectName: string): GuiObject
 	assert(
 		guiObject ~= nil and guiObject:IsA("GuiObject"),
 		string.format("Gradient effect %q needs an InteractionTarget GuiObject.", effectName)
 	)
+
+	return guiObject :: GuiObject
 end
 
 local function makeTweenInfo(
@@ -360,15 +362,16 @@ local function colorAt(colors: { Color3 }, index: number): Color3
 end
 
 local function buildRainbowColors(options: EffectOptions): { Color3 }
-	if options.Colors and #options.Colors >= 3 then
-		return options.Colors
+	local optionColors = options.Colors
+	if optionColors ~= nil and #optionColors >= 3 then
+		return optionColors
 	end
 
 	local steps = math.max(options.Steps or 15, 3)
 	local saturation = options.Saturation or 1
 	local value = options.Value or 1
 
-	local colors = table.create(steps)
+	local colors: { Color3 } = table.create(steps)
 
 	for i = 0, steps - 1 do
 		colors[i + 1] = Color3.fromHSV(i / steps, saturation, value)
@@ -449,7 +452,7 @@ end
 
 -- Shine
 -- Applies a shine-style color sequence and periodically sweeps it across the object.
-Effects.shine = function(controller)
+Effects.shine = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local options = controller.Options
 	local startOffset = options.StartOffset or Vector2.new(-1, 0)
@@ -509,13 +512,12 @@ end
 
 -- Hover
 -- Moves the gradient into view on hover and alternates the side it exits from.
-Effects.hover = function(controller)
+Effects.hover = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local target = controller.Target
 	local options = controller.Options
 
-	assertGuiObject(target, controller.Effect)
-	local guiTarget = target :: GuiObject
+	local guiTarget = assertGuiObject(target, controller.Effect)
 	local startOffset = options.StartOffset or Vector2.new(-1, 0)
 
 	if options.Colors ~= nil then
@@ -573,13 +575,12 @@ end
 
 -- HoverStay
 -- While hovered, continuously slides between two sides by flipping rotation.
-Effects.hoverStay = function(controller)
+Effects.hoverStay = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local target = controller.Target
 	local options = controller.Options
 
-	assertGuiObject(target, controller.Effect)
-	local guiTarget = target :: GuiObject
+	local guiTarget = assertGuiObject(target, controller.Effect)
 	local startOffset = options.StartOffset or Vector2.new(1, 0)
 	local endOffset = options.EndOffset or Vector2.new(-1, 0)
 
@@ -642,13 +643,13 @@ end
 
 -- Rainbow
 -- Continuously cycles a generated HSV rainbow palette.
-Effects.rainbow = function(controller)
+Effects.rainbow = function(controller: InternalController)
 	runPaletteCycle(controller, buildRainbowColors(controller.Options))
 end
 
 -- Scroll / Flow
 -- Continuously moves the existing gradient from StartOffset to EndOffset.
-Effects.scroll = function(controller)
+Effects.scroll = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local options = controller.Options
 	local startOffset = options.StartOffset or Vector2.new(-1, 0)
@@ -680,7 +681,7 @@ end
 
 -- Rotate
 -- Continuously rotates the gradient while preserving its current colors and offset.
-Effects.rotate = function(controller)
+Effects.rotate = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local options = controller.Options
 	local startRotation = options.StartRotation or options.Rotation or gradient.Rotation
@@ -710,7 +711,7 @@ end
 
 -- Sweep
 -- Periodically sweeps the existing gradient across the object without imposing a color style.
-Effects.sweep = function(controller)
+Effects.sweep = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local options = controller.Options
 	local startOffset = options.StartOffset or Vector2.new(-1, 0)
@@ -749,13 +750,12 @@ end
 
 -- Pressed / Activated
 -- Moves the gradient to a pressed state for mouse/touch input, then returns to rest.
-Effects.pressed = function(controller)
+Effects.pressed = function(controller: InternalController)
 	local gradient = controller.Gradient
 	local target = controller.Target
 	local options = controller.Options
 
-	assertGuiObject(target, controller.Effect)
-	local guiTarget = target :: GuiObject
+	local guiTarget = assertGuiObject(target, controller.Effect)
 	local restOffset = options.RestOffset or options.StartOffset or gradient.Offset
 	local pressedOffset = options.PressedOffset or options.EndOffset or Vector2.new(0.12, 0)
 	local restRotation = options.RestRotation or options.Rotation or gradient.Rotation
@@ -815,7 +815,7 @@ end
 
 -- ColorCycle
 -- Continuously cycles across a supplied palette of 3+ colors.
-Effects.colorCycle = function(controller)
+Effects.colorCycle = function(controller: InternalController)
 	runPaletteCycle(controller, resolveCycleColors(controller.Options))
 end
 
@@ -869,7 +869,7 @@ end
 function GradientKit.Create(guiObject: GuiObject, properties: GradientProperties?): UIGradient
 	assert(guiObject:IsA("GuiObject"), "GradientKit.Create expected a GuiObject.")
 
-	local props = properties or {}
+	local props: GradientProperties = properties or {}
 	local gradient = Instance.new("UIGradient")
 	gradient.Name = props.Name or "Gradient"
 
@@ -901,7 +901,7 @@ end
 
 function GradientKit.Start(gradient: UIGradient, effectName: EffectName | string, options: EffectOptions?): Controller
 	assertGradient(gradient)
-	local effectOptions = options or {}
+	local effectOptions: EffectOptions = options or {}
 	local normalizedEffectName = normalizeEffectName(effectName)
 
 	assert(
@@ -987,8 +987,11 @@ function GradientKit.Apply(guiObject: GuiObject, effectName: EffectName | string
 		effectOptions.InteractionTarget = guiObject
 	end
 
-	local controller = GradientKit.Start(gradient, effectName, effectOptions) :: InternalController
-	controller.OwnsGradient = ownsGradient
+	assert(gradient ~= nil, "GradientKit failed to resolve or create a gradient.")
+	local controller = GradientKit.Start(gradient, effectName, effectOptions)
+	local internalController = Active[gradient]
+	assert(internalController ~= nil, "GradientKit failed to create an active controller.")
+	internalController.OwnsGradient = ownsGradient
 	return controller
 end
 
@@ -1016,7 +1019,7 @@ function GradientKit.Stop(target: UIGradient | Controller?): boolean
 end
 
 function GradientKit.StopAll(): number
-	local controllers = {}
+	local controllers: { InternalController } = {}
 
 	for _, controller in pairs(Active) do
 		table.insert(controllers, controller)
