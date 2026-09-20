@@ -1,0 +1,17 @@
+[package]
+name = "biotoxin495/popupkit"
+description = "A small, dependency-free Roblox module for contextual UI popups - hover cards, inventory details, pinned item panels, cursor-following tooltips, anchored panels, and directly displayed popups - without depending on a framework or service container."
+version = "1.0.4"
+license = "MIT"
+authors = ["biotoxin495"]
+realm = "shared"
+registry = "https://github.com/UpliftGames/wally-index"
+repository = "https://github.com/biotoxin495/popupkit"
+
+exclude = [
+	"examples",
+	"docs",
+	".github",
+	"*.rbxl",
+	"*.rbxlx",
+]
